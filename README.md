@@ -2,88 +2,94 @@
 
 This repository contains our team's solution for the **International Contest on Aftershock Forecasting**.
 
-## Approach
+The goal is to predict:
 
-This solution follows a supervised machine learning framework:
+* **Maximum aftershock magnitude**
+* **Time of occurrence of the maximum aftershock**
 
-### Feature Engineering
+for three forecasting horizons after a mainshock event:
 
-Features were generated from the historical earthquake sequence, including:
+| Window | Forecast Horizon |
+| ------ | ---------------- |
+| T1     | 0–24 hours       |
+| T2     | 24–72 hours      |
+| T3     | 72–168 hours     |
+
+---
+
+## Methodology
+
+### Data Processing
+
+Raw earthquake sequence data are transformed into sequence-level features describing:
 
 * Mainshock characteristics
-* Temporal statistics of prior aftershocks
-* Magnitude distribution summaries
-* Spatial characteristics of the sequence
-* Sequence-level aggregation metrics
+* Historical aftershock activity
+* Magnitude statistics
+* Temporal behavior
+* Spatial properties of the sequence
+
+Processed datasets are stored in the `cleaned_data/` directory.
 
 ### Models Evaluated
 
-Three machine learning models were compared:
+Three machine learning approaches were explored:
 
 * LightGBM
 * XGBoost
-* Neural Network
+* Feed-Forward Neural Network
 
-Models were evaluated using:
+Models were trained separately for:
 
-* Mean Absolute Error (MAE) for aftershock magnitude prediction
-* Mean Absolute Error (MAE) for aftershock timing prediction
+1. Predicting the occurrence time of the strongest aftershock
+2. Predicting the magnitude of the strongest aftershock
 
-### Final Model
+for each forecasting window (T1–T3).
 
-Based on validation performance, **XGBoost** was selected as the final submission model due to its strong overall performance and consistency across all prediction windows.
+### Model Selection
+
+Validation experiments compared timing and magnitude prediction errors across all models. XGBoost was selected as the final submission model due to its strong overall performance and robustness across forecasting horizons.
+
+---
 
 ## Repository Structure
 
 ```text
 .
-├── code_notebook.ipynb        # Full modeling workflow
-├── data/                      # Competition datasets
-├── submissions/               # Generated submission files
-├── models/                    # Saved model artifacts
+├── cleaned_data/          # Processed training and test datasets
+├── models/                # Saved model/prediction artifacts
+├── submission_files/      # Competition submission CSV files
+├── code_notebook.ipynb    # Complete workflow: preprocessing, training, evaluation
+├── createfiles.py         # Generates competition submission files
+├── test_eq_data.zip       # Competition test dataset
 └── README.md
 ```
 
-## Results
+---
 
-The final system predicts both:
+## Running the Project
 
-* Time of the largest aftershock
-* Magnitude of the largest aftershock
-
-for each of the three forecast horizons (T1–T3).
-
-Model selection was performed using cross-validation and held-out validation earthquake sequences.
-
-## Reproducing the Results
-
-### Requirements
-
-```bash
-pip install -r requirements.txt
-```
-
-### Training
-
-Run the notebook:
+### Open the notebook
 
 ```bash
 jupyter notebook code_notebook.ipynb
 ```
 
-or execute the training pipeline directly:
+The notebook contains:
+
+* Data preprocessing
+* Feature engineering
+* Model training
+* Validation experiments
+* Prediction generation
+
+### Generate Submission Files
 
 ```bash
-python train.py
+python createfiles.py
 ```
 
-### Generating Submission Files
-
-```bash
-python generate_submission.py
-```
-
-This produces the required competition files:
+This script converts model predictions into the competition submission format:
 
 ```text
 YYYYMMDDHHMMSS-T1-T2.csv
@@ -92,14 +98,35 @@ YYYYMMDDHHMMSS-T3.csv
 
 for every earthquake sequence in the test set.
 
-## Competition
+---
 
-**International Competition on Prediction Technology for Aftershocks (Tianchi 2026)**
+## Competition Submission Format
 
-The competition aims to improve forecasting of strong aftershocks through statistical, machine learning, and AI-based methods, helping advance earthquake hazard assessment and disaster response.
+For each earthquake sequence:
 
-## Author
+### File 1: T1 and T2
 
-**Archith Sharma**
+```text
+YYYYMMDDHHMMSS-T1-T2.csv
+```
+
+Contains:
+
+* Maximum aftershock magnitude prediction
+* Predicted occurrence time
+
+for the T1 and T2 forecasting windows.
+
+### File 2: T3
+
+```text
+YYYYMMDDHHMMSS-T3.csv
+```
+
+Contains the prediction for the T3 forecasting window.
+
+---
 
 GitHub: https://github.com/ArchithSharma
+
+This repository was developed as part of the Tianchi 2026 Aftershock Prediction Competition.
