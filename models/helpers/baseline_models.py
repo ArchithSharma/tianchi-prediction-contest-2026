@@ -2,7 +2,6 @@ import pickle
 from pathlib import Path
 
 import numpy as np
-from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.multioutput import MultiOutputRegressor
 
@@ -60,69 +59,45 @@ def build_baseline_models(n_trees=500, random_state=12345):
     Return baseline regression models.
     Output dimension is 6:
         [T1_delta_mag, T1_norm_time,
-         T2_delta_mag, T2_norm_time,
-         T3_delta_mag, T3_norm_time]
+        T2_delta_mag, T2_norm_time,
+        T3_delta_mag, T3_norm_time]
     """
 
     models = {}
     models["LightGBM"] = MultiOutputRegressor(
-        lgbm.LGBMRegressor(
-            n_estimators=n_trees,
-            learning_rate=0.03,
-            num_leaves=15,
-            max_depth=5,
-            min_child_samples=10,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            reg_alpha=0.1,
-            reg_lambda=1.0,
-            random_state=random_state,
-            verbose=-1,
-        )
-    )
+        lgbm.LGBMRegressor(n_estimators=n_trees,
+                           learning_rate=0.03,
+                           num_leaves=15,
+                           max_depth=5,
+                           min_child_samples=10,
+                           subsample=0.8,
+                           colsample_bytree=0.8,
+                           reg_alpha=0.1,
+                           reg_lambda=1.0,
+                           random_state=random_state,
+                           verbose=-1))
 
     models["XGBoost"] = MultiOutputRegressor(
-        xgb.XGBRegressor(
-            n_estimators=n_trees,
-            learning_rate=0.03,
-            max_depth=3,
-            min_child_weight=5,
-            subsample=0.8,
-            colsample_bytree=0.8,
-            reg_alpha=0.1,
-            reg_lambda=1.0,
-            objective="reg:squarederror",
-            random_state=random_state,
-            n_jobs=-1,
-        )
-    )
+        xgb.XGBRegressor(n_estimators=n_trees,learning_rate=0.03,
+                         max_depth=3,min_child_weight=5,subsample=0.8,
+                         colsample_bytree=0.8,reg_alpha=0.1,reg_lambda=1.0,
+                         objective="reg:squarederror",random_state=random_state,n_jobs=-1))
     return models
 
 
-def fit_baseline_models(
-    X_arrays,
-    Y_arrays,
-    model_names=("LightGBM",),
-    recent_k=50,
-    n_trees=500,
-    random_state=12345,
-):
+def fit_baseline_models(X_arrays,Y_arrays,
+                        model_names=("LightGBM",),
+                        recent_k=50,n_trees=500,
+                        random_state=12345):
     """
     Fit selected baseline models.
     """
-
     X_train_tab = make_tabular_X(X_arrays, recent_k=recent_k)
     Y_train_tab = make_tabular_Y(Y_arrays)
-
-    all_models = build_baseline_models(
-        n_trees=n_trees,
-        random_state=random_state,
-    )
-
+    all_models = build_baseline_models(n_trees=n_trees,random_state=random_state)
     fitted = {}
-
     for name in model_names:
-        print(f"\nTraining {name}...")
+        print(f"\nTraining {name}")
         model = all_models[name]
         model.fit(X_train_tab, Y_train_tab)
         fitted[name] = model
@@ -154,21 +129,9 @@ def fit_predict_baselines(X_arrays,Y_arrays,testX_array,model_names=("LightGBM",
         train baselines -> predict test set.
     """
 
-    models = fit_baseline_models(
-        X_arrays=X_arrays,
-        Y_arrays=Y_arrays,
-        model_names=model_names,
-        recent_k=recent_k,
-        n_trees=n_trees,
-        random_state=random_state,
-    )
-
-    preds = predict_baseline_models(
-        models=models,
-        testX_array=testX_array,
-        recent_k=recent_k,
-    )
-
+    models = fit_baseline_models(X_arrays=X_arrays,Y_arrays=Y_arrays,model_names=model_names,
+                                 recent_k=recent_k,n_trees=n_trees,random_state=random_state)
+    preds = predict_baseline_models(models=models,testX_array=testX_array,recent_k=recent_k)
     return models, preds
 
 

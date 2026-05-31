@@ -5,7 +5,7 @@ from pathlib import Path
 # -----------------------------
 # Load predictions
 # -----------------------------
-preds = pd.read_csv("baseline_predictions.csv")
+preds = pd.read_csv("models/saved_models/baseline_predictions.csv")
 
 # Keep only XGBoost predictions
 preds = preds[preds["model"] == "XGBoost"].copy()
