@@ -1,31 +1,25 @@
-import sys
 from pathlib import Path
-import importlib.util
-import pickle
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
-from torch.optim import Adam
-from tqdm import tqdm
 import joblib
-import helpers.feature_extract as fx
 import helpers.load_data as ld
 import helpers.evaluate as eh
 import helpers.baseline_models as bsm
-
 import add_func as af
 
-# File path
+# Local version of code_notebook.ipynb
 
-PLATES_PATH     = "plates/plate_mainshock_analysis/tectonicplates-master/GeoJSON/PB2002_plates"
-TRAIN_DATA_PATH = "eq-data/cleaned_data/training_trajectories_full" #Must be imported from google drive
-TEST_DATA_PATH  = "eq-data/cleaned_data/test_seq" #Must be imported from google drive
+# File path
+PLATES_PATH     = "models/plate_mainshock_analysis/tectonicplates-master/GeoJSON/PB2002_plates"
+TRAIN_DATA_PATH = "cleaned_data" 
+TEST_DATA_PATH  = "cleaned_data/test_seq"
 
 WINDOWS = {"T1": (0.0, 1.0), # 24 hours within
            "T2": (1.0, 3.0), # 24-72 hours
            "T3": (3.0, 7.0)} # 72 -168 hours
 PLATE_MIN_COUNT = 30
+
 # FEATURE COLS
 FEATURE_COLS = ["log_time_gap_days",
                 "Depth", "Mag", "Lat", "Lon",
@@ -38,7 +32,7 @@ SCALE_COLS = ["log_time_gap_days",
                 "rel_time_diff", "rel_mag_diff", "rel_depth_diff"]
 
 
-cache_name = "n_all"
+cache_name = "models/saved_models/cache"
 cache_dir = Path(f"{cache_name}")
 cache_dir.mkdir(parents=True, exist_ok=True)
 max_obs = None
@@ -50,7 +44,7 @@ df_X_list, df_Y_list, valid_ids = ld.load_raw_data(TRAIN_DATA_PATH, min_mag, max
 testX_raw, testY_raw, test_ids   = ld.load_raw_data(TEST_DATA_PATH,  min_mag, max_obs, seed=123)
 print("# train:", len(df_X_list), "# test:", len(testX_raw))
 
-# 
+
 PRE_CAP = 300   # keep last 300 events per sequence; mainshock is the last row
 df_X_cap     = [df.tail(PRE_CAP).reset_index(drop=True) for df in df_X_list]
 testX_raw_cap = [df.tail(PRE_CAP).reset_index(drop=True) for df in testX_raw]
@@ -59,9 +53,6 @@ import gc
 del df_X_list 
 gc.collect()
 print("pre-capped. max train rows now:", max(len(d) for d in df_X_cap))
-
-
-import joblib, gc
 
 X_arrays, Y_arrays, feature_cols = af.build_XY_train(df_X_cap, df_Y_list, scaler_path=str(scaler_path))
 print("train dim:", X_arrays[0].shape[1])
@@ -80,7 +71,7 @@ joblib.dump(cache, cache_path, compress=0)
 print("saved", cache_path)
 
 
-save_path = Path("/kaggle/working/model/")
+save_path = Path("/models/saved_models/")
 save_path.mkdir(parents=True, exist_ok=True)
 
 cache = joblib.load(cache_path)
@@ -124,8 +115,8 @@ print(device_name)
 lr = 1e-3
 epochs = 150
 hidden_size = 256
-SAVE_MODEL_PATH = Path("/kaggle/working/model/neural_model.pt")
-SAVE_EVAL_PATH = Path("/kaggle/working/results/")
+SAVE_MODEL_PATH = Path("/models/saved_models/neural_model.pt")
+SAVE_EVAL_PATH = Path("/models/saved_models")
 model = NeuralModel(input_size=len(feature_cols),hidden_size=hidden_size,output_size=2)
 model.fit(X_tr,Y_tr,device=device_name,lr=lr,epochs=epochs,  save_path = SAVE_MODEL_PATH)
 
@@ -156,7 +147,7 @@ val_mae(model, X_tr, Y_tr, device_name)
 val_mae(model, X_val, Y_val, device_name)
 
 results = []
-bg_path = "eq-data/cleaned_data/test_data"
+bg_path = "/cleaned_data/test_data"
 
 for i in range(len(testX_array)):
     pred_df = model.predict(df_X=testX_array[i],df_X_raw=testX_raw[i],device=device_name)
